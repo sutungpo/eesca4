@@ -84,7 +84,13 @@ class DetectorBackboneWithFPN(nn.Module):
         self.fpn_params = nn.ModuleDict()
 
         # Replace "pass" statement with your code
-        pass
+        for level_name, feature_shape in dummy_out_shapes:
+            self.fpn_params[f"{level_name}_lateral"] = nn.Conv2d(
+                feature_shape[1], out_channels, kernel_size=1
+            )
+            self.fpn_params[f"{level_name}_output"] = nn.Conv2d(
+                out_channels, out_channels, kernel_size=3, padding=1
+            )
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -99,7 +105,6 @@ class DetectorBackboneWithFPN(nn.Module):
         return {"p3": 8, "p4": 16, "p5": 32}
 
     def forward(self, images: torch.Tensor):
-
         # Multi-scale features, dictionary with keys: {"c3", "c4", "c5"}.
         backbone_feats = self.backbone(images)
 
@@ -111,7 +116,17 @@ class DetectorBackboneWithFPN(nn.Module):
         ######################################################################
 
         # Replace "pass" statement with your code
-        pass
+        p5 = self.fpn_params["c5_lateral"](backbone_feats["c5"])
+        p4 = self.fpn_params["c4_lateral"](backbone_feats["c4"]) + F.interpolate(
+            p5, scale_factor=2.0, mode="bilinear"
+        )
+        p3 = self.fpn_params["c3_lateral"](backbone_feats["c3"]) + F.interpolate(
+            p4, scale_factor=2.0, mode="bilinear"
+        )
+        fpn_feats["p5"] = self.fpn_params["c5_output"](p5)
+        fpn_feats["p4"] = self.fpn_params["c4_output"](p4)
+        fpn_feats["p3"] = self.fpn_params["c3_output"](p3)
+
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -157,7 +172,14 @@ def get_fpn_location_coords(
         # TODO: Implement logic to get location co-ordinates below.          #
         ######################################################################
         # Replace "pass" statement with your code
-        pass
+        _, _, feat_height, feat_width = feat_shape
+        hg, wg = torch.meshgrid(
+            torch.arange(feat_height, dtype=dtype, device=device),
+            torch.arange(feat_width, dtype=dtype, device=device),
+            indexing="ij",
+        )
+        grids = torch.stack((hg, wg), dim=2).flatten(0, 1)
+        location_coords[level_name] = level_stride * (grids + 0.5)
         ######################################################################
         #                             END OF YOUR CODE                       #
         ######################################################################
