@@ -527,7 +527,7 @@ class FCOS(nn.Module):
         # Replace "pass" statement with your code
         for matched_boxes in matched_gt_boxes:
             matched_deltas = {}
-            for level, boxes in matched_boxes:
+            for level, boxes in matched_boxes.items():
                 deltas = fcos_get_deltas_from_locations(
                     locations_per_fpn_level[level], boxes, strides_per_fpn_level[level]
                 )
