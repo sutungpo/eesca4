@@ -532,7 +532,7 @@ class FCOS(nn.Module):
                     locations_per_fpn_level[level], boxes, strides_per_fpn_level[level]
                 )
                 matched_deltas[level] = deltas
-            matched_gt_boxes.append(matched_deltas)
+            matched_gt_deltas.append(matched_deltas)
         ######################################################################
         #                           END OF YOUR CODE                         #
         ######################################################################
@@ -570,14 +570,14 @@ class FCOS(nn.Module):
         target_cls_logits[pos_mask] = F.one_hot(
             matched_gt_boxes[:, :, 4][pos_mask].to(torch.long), self.num_classes
         ).to(device=images.device, dtype=images.dtype)
-        target_ctr_logits = fcos_make_centerness_targets(matched_gt_deltas)
+        target_ctr_logits = fcos_make_centerness_targets(matched_gt_deltas.view(-1, 4))
         loss_cls = sigmoid_focal_loss(pred_cls_logits, target_cls_logits)
         loss_box = 0.25 * F.l1_loss(
             pred_boxreg_deltas, matched_gt_deltas, reduction="none"
         )
         loss_box[matched_gt_deltas < 0] *= 0
         loss_ctr = F.binary_cross_entropy_with_logits(
-            pred_ctr_logits, target_ctr_logits, reduction="none"
+            pred_ctr_logits.flatten(), target_ctr_logits, reduction="none"
         )
         loss_ctr[target_ctr_logits < 0] *= 0
         ######################################################################
