@@ -206,6 +206,7 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
         return torch.zeros(0, dtype=torch.long)
 
     keep = None
+
     #############################################################################
     # TODO: Implement non-maximum suppression which iterates the following:     #
     #       1. Select the highest-scoring box among the remaining ones,         #
@@ -218,7 +219,27 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     # github.com/pytorch/vision/blob/main/torchvision/csrc/ops/cpu/nms_kernel.cpp
     #############################################################################
     # Replace "pass" statement with your code
-    pass
+    def box_area(box1):
+        return (box1[2] - box1[0]) * (box1[3] - box1[1])
+
+    areas = box_area(boxes.t())
+    # 1. calculate iou
+    rows = boxes.size(0)
+    top_left = torch.maximum(boxes[:, None, :2], boxes[:, :2])
+    bot_right = torch.minimum(boxes[:, None, 2:], boxes[:, 2:])
+    area_inter = (bot_right - top_left).clamp(min=0).prod(dim=2)
+    ious = area_inter / (areas[:, None] + areas - area_inter)
+    ious = ious - torch.eye(rows)
+    # 2. loop in score ascending order, update keep index
+    keep_idx = torch.ones(rows, dtype=torch.bool)
+    scores_index = scores.argsort(descending=True)
+    keep = []
+    for idx in scores_index:
+        if not keep_idx[idx]:
+            continue
+        keep_idx &= ious[idx] <= iou_threshold
+        keep.append(idx)
+    keep = torch.tensor(keep, dtype=torch.long)
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
