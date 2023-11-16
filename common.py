@@ -231,7 +231,7 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     ious = area_inter / (areas[:, None] + areas - area_inter)
     ious = ious - torch.eye(rows).to(boxes)
     # 2. loop in score ascending order, update keep index
-    keep_idx = torch.ones(rows, dtype=torch.bool).to(boxes)
+    keep_idx = torch.ones(rows, dtype=torch.bool, device=boxes.device)
     scores_index = scores.argsort(descending=True)
     keep = []
     for idx in scores_index:
@@ -239,7 +239,7 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
             continue
         keep_idx &= ious[idx] <= iou_threshold
         keep.append(idx)
-    keep = torch.tensor(keep, dtype=torch.long)
+    keep = torch.tensor(keep, dtype=torch.long, device=boxes.device)
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
