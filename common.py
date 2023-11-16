@@ -229,9 +229,9 @@ def nms(boxes: torch.Tensor, scores: torch.Tensor, iou_threshold: float = 0.5):
     bot_right = torch.minimum(boxes[:, None, 2:], boxes[:, 2:])
     area_inter = (bot_right - top_left).clamp(min=0).prod(dim=2)
     ious = area_inter / (areas[:, None] + areas - area_inter)
-    ious = ious - torch.eye(rows)
+    ious = ious - torch.eye(rows).to(boxes)
     # 2. loop in score ascending order, update keep index
-    keep_idx = torch.ones(rows, dtype=torch.bool)
+    keep_idx = torch.ones(rows, dtype=torch.bool).to(boxes)
     scores_index = scores.argsort(descending=True)
     keep = []
     for idx in scores_index:
